@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install Cocogitto
+        uses: cocogitto/cocogitto-action@v3
+
+      - name: Bump version
+        run: cog bump --auto
+
+      - name: Push tag
+        run: git push --follow-tags
+
+      - name: Generate changelog
+        run: cog changelog --at $(git describe --tags --abbrev=0) > CHANGELOG_RELEASE.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: $(git describe --tags --abbrev=0)
+          body_path: CHANGELOG_RELEASE.md
